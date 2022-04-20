@@ -127,7 +127,7 @@ Lrandom = zeros(m,50);
 Crandom = zeros(m,50);
 
 for i = 1:m
-    A = SUBJECTS(:,:,i)>0;
+    A = couble(SUBJECTS(:,:,i)>0);
     for j = 1:10
         B = randmio_und(A,10);
         Drandom = distance_bin(B);
@@ -141,7 +141,7 @@ Lrandom2 = zeros(m,50);
 Crandom2 = zeros(m,50);
 
 for i = 1:m
-    A2 = SUBJECTS(:,:,i)>0.15;
+    A2 = double(SUBJECTS(:,:,i)>0.15);
     for j = 1:10
         B2 = randmio_und(A2,10);
         Drandom2 = distance_bin(B2);
