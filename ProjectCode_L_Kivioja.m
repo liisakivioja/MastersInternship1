@@ -202,3 +202,21 @@ end
      Cnormalized3(i) = C3(i)/mean(Crandommain3(i));
  end 
  
+%% Let's compute SW index across subjects
+%When only positive weights are present
+for i = 1:m
+    SW(i) = Cnormalized(i)/Lnormalized(i);
+end
+%min = 1.0764
+
+%When weights exceeding 0.15 are present
+for i = 1:m
+    SW2(i) = Cnormalized2(i)/Lnormalized2(i);
+end
+%min = 1.2804
+
+%When density is 0.3
+for i = 1:m
+    SW3(i) = Cnormalized3(i)/Lnormalized3(i);
+end
+%min = 1.5064
