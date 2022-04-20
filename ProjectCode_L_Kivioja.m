@@ -113,9 +113,92 @@ end
 
 L2(isnan(L2)) = 0;
 
-%% Create arrays with subject nr, L, C and their brain vol
-info = [];
-info = [subs L C vol];
-info2 = [];
-infor2 = [subs L2 C2 vol];
+%% Let's also create matrices with density of 0.3
+for i = 1:m
+    thr_m = threshold_proportional(SUBJECTS(:,:,i),0.3);
+    d3(i) = density_und(thr_m);
+    D3 = distance_bin(thr_m);
+    L3(i) = mean(squareform(D3));
+    C3(i) = mean(clustering_coef_bu(thr_m));
+end
 
+%% Let's compute randomized networks for all subjects with postive weights only
+Lrandom = zeros(m,50);
+Crandom = zeros(m,50);
+
+for i = 1:m
+    A = SUBJECTS(:,:,i)>0;
+    for j = 1:10
+        B = randmio_und(A,10);
+        Drandom = distance_bin(B);
+        Lrandom(i,j) = mean(squareform(Drandom));
+        Crandom(i,j) = mean(clustering_coef_bu(B));
+    end
+end
+
+%% Let's compute randomized networks for all subjects with weights exceeding 0.15
+Lrandom2 = zeros(m,50);
+Crandom2 = zeros(m,50);
+
+for i = 1:m
+    A2 = SUBJECTS(:,:,i)>0.15;
+    for j = 1:10
+        B2 = randmio_und(A2,10);
+        Drandom2 = distance_bin(B2);
+        Lrandom2(i,j) = mean(squareform(Drandom2));
+        Crandom2(i,j) = mean(clustering_coef_bu(B2));
+    end
+end
+
+%% Let's compute randomized networks for all subjects with density 0.3
+Lrandom3 = zeros(m,50);
+Crandom3 = zeros(m,50);
+
+for i = 1:m
+    thr_m2 = threshold_proportional(SUBJECTS(:,:,i),0.3);
+    for j = 1:10
+        B3 = randmio_und(thr_m2,10);
+        Drandom3 = distance_bin(B3);
+        Lrandom3(i,j) = mean(squareform(Drandom3));
+        Crandom3(i,j) = mean(clustering_coef_bu(B3));
+    end
+end
+
+%% Let's compute L- and Crandom across all subjects
+%When only positive weights are present
+for i = 1:m
+    Lrandommain(i) = mean(Lrandom(i),2);
+    Crandommain(i) = mean(Crandom(i),2);
+end
+
+%When weights exceeding 0.15 are present
+for i = 1:m
+    Lrandommain2(i) = mean(Lrandom2(i),2);
+    Crandommain2(i) = mean(Crandom2(i),2);
+end
+
+%When density is 0.3
+for i = 1:m
+    Lrandommain3(i) = mean(Lrandom3(i),2);
+    Crandommain3(i) = mean(Crandom3(i),2);
+end
+
+%% Let's create normalizations of L and C 
+%When only positive weights are present
+ for i = 1:m
+     Lnormalized(i) = L(i)/mean(Lrandommain(i));
+     Cnormalized(i) = C(i)/mean(Crandommain(i));
+ end 
+ 
+%When weights exceeding 0.15 are present
+  for i = 1:m
+     Lnormalized2(i) = L2(i)/mean(Lrandommain2(i));
+     Cnormalized2(i) = C2(i)/mean(Crandommain2(i));
+  end 
+
+%When density is 0.3
+ for i = 1:m
+     Lnormalized3(i) = L3(i)/mean(Lrandommain3(i));
+     Cnormalized3(i) = C3(i)/mean(Crandommain3(i));
+ end 
+ 
