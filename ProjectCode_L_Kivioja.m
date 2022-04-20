@@ -123,8 +123,8 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with postive weights only
-Lrandom = zeros(m,50);
-Crandom = zeros(m,50);
+Lrandom = zeros(m,10);
+Crandom = zeros(m,10);
 
 for i = 1:m
     A = couble(SUBJECTS(:,:,i)>0);
@@ -137,8 +137,8 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with weights exceeding 0.15
-Lrandom2 = zeros(m,50);
-Crandom2 = zeros(m,50);
+Lrandom2 = zeros(m,10);
+Crandom2 = zeros(m,10);
 
 for i = 1:m
     A2 = double(SUBJECTS(:,:,i)>0.15);
@@ -151,8 +151,8 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with density 0.3
-Lrandom3 = zeros(m,50);
-Crandom3 = zeros(m,50);
+Lrandom3 = zeros(m,10);
+Crandom3 = zeros(m,10);
 
 for i = 1:m
     thr_m2 = threshold_proportional(SUBJECTS(:,:,i),0.3);
