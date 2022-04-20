@@ -16,3 +16,5 @@ Then we order the subjects according to their brain volumes. After this we inves
 5. Normalized clustering coefficient computation
 6. Normalized shortest path length computation
 7. Small-world index computation
+
+More instructions will follow
