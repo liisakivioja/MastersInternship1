@@ -1,16 +1,19 @@
+======================================================================
 addpath('C:\Users\Liisa\Documents\MATLAB_masters1\hcp_fc_liisa/hcp');
 addpath('C:\Users\Liisa\Documents\MATLAB_masters1\2019_03_03_BCT');
 load('connectivity_fmri_gmean_0.01-0.1_lausanne120.mat');
 load('region_properties_lausanne120_8seeds.mat');
+======================================================================
 
 %% Filter out unsuitable matrices in subjects
 cmatrix = squeeze(connectivity(:,:,1,:));
 subjects = any(cmatrix,[1 2]);
-SUBJECTS = cmatrix(:,:,subjects==1); %disregard connectivity matrices
-VOLS = regionProperties(:,4,subjects==1); %disregard volumes
+
+newconn = cmatrix(:,:,subjects==1); %disregard their connectivity matrices
+VOLS = regionProperties(:,4,subjects==1); %disregard their volumes
 
 %% Let's compute the total volume for each subject
-m = size(SUBJECTS, 3);
+m = size(newconn, 3);
 vol = zeros(m,1);
 
 for i = 1:m
@@ -18,39 +21,28 @@ for i = 1:m
     vol(i,:) = temp;
 end
 
-%% Let's visualize the data
-figure; imagesc(connectivity(:,:,1,1)); colorbar 
-hold on
-xlabel('Nodes'); ylabel('Nodes'); %title('FC matrix');
-
-%Let's now create a weighted group-averaged FC matrix
-Wfc = mean(SUBJECTS(:,:,:),3);
-figure; imagesc(Wfc); colorbar
-hold on
-xlabel('Nodes'); ylabel('Nodes'); %title('Weighted group averaged FC matrix');
-
 %% Clean the dataset from outliers
-% Average functional connectivity per subject
-for i = 1:size(SUBJECTS,3)
-    sl = (squareform(SUBJECTS(:,:,i)));
+%Average functional connectivity per subject
+for i = 1:size(newconn,3)
+    sl = (squareform(newconn(:,:,i)));
     avg = mean(sl,'all'); 
     fconn(i,:) = avg;
 end
 
-s = [1:size(SUBJECTS,3)].'; %create subjects list
+s = [1:size(newconn,3)].'; %create subjects list
 fconn = [fconn s];
 
-Q1 = quantile(fconn,[0.25]); %0.0101
-Q2 = quantile(fconn,[0.5]); %0.0155
-Q3 = quantile(fconn,[0.75]); %0.0222
-IQR = iqr(fconn); %0.0122
-afc = fconn(fconn(:,1)<(Q1-1.5*IQR)|fconn(:,1)>(Q3+1.5*IQR),:);
-% In total 21 subs. Visually, subs 91,118,363 and 434 stand out.
-
-%% Also, let's find subjects with strongly deviating connectivity patterns
+Q1 = quantile(fconn,[0.25]); 
+Q2 = quantile(fconn,[0.5]); 
+Q3 = quantile(fconn,[0.75]);
+IQR = iqr(fconn); 
+acf = fconn(fconn(:,1)<(Q1-1.5*IQR)|fconn(:,1)>(Q3+1.5*IQR),:);
+clear Q1 Q2 Q3 IQR
+  
+%% Find subjects with strongly deviating connectivity patterns
 T = zeros(m);
-J = SUBJECTS(:,:,:);
-J = permute(reshape(J, 114, 114, 470), [3 1 2]);
+J = newconn(:,:,:);
+J = permute(reshape(J, 114, 114, 470), [3 1 2]); %114 is the amount of nodes
 T = corr(J(:,:)'); 
 
 %Let's visualize T
@@ -64,29 +56,27 @@ scatter(subs,score);
 subscore = []; 
 subscore = [subs score];
 
-Q1s = quantile(score,[0.25]); %0.0.5435
-Q2s = quantile(score,[0.5]); %0.5673
-Q3s = quantile(score,[0.75]); %0.5896
-IQR2 = iqr(score); %0.0461
-scorepersub = subscore(subscore(:,2)<(Q1s-1.5*IQR2)|subscore(:,2)>(Q3s+1.5*IQR2),:);
-% In total 10 subs. Visually, subs 1,253,411 and 434 stand out.
-% Subs 118 and 434 are identified outliers in both techniques.
+Q1 = quantile(score,[0.25]); 
+Q2 = quantile(score,[0.5]); 
+Q3 = quantile(score,[0.75]); 
+IQR = iqr(score);
+outl = subscore(subscore(:,2)<(Q1-1.5*IQR)|subscore(:,2)>(Q3+1.5*IQR),:); 
 
-%% Let's disregard these subjects
-SUBJECTS(:,:,118) = [];
-SUBJECTS(:,:,434) = [];
+%Let's disregard the subjects identified as potential outliers in both methods.
+newconn(:,:,118) = [];
+newconn(:,:,434) = [];
 vol(118) = [];
 vol(434) = [];
-subs = [1:size(SUBJECTS,3)].';
+subs = [1:size(newconn,3)].'; %update the amount of included subjects
 
 %% Let's compute graph metrics across all subjects with only positive weights
-m = size(SUBJECTS,3);
+m = size(newconn,3);
 d = zeros(m,1);
 L = zeros(m,1);
 C = zeros(m,1);
 
 for i = 1:m
-    A = double(SUBJECTS(:,:,i)>0);
+    A = double(newconn(:,:,i)>0);
     A(A < 0) = 0;
     d(i) = density_und(A);
     D = distance_bin(A);
@@ -97,13 +87,12 @@ end
 L(isnan(L)) = 0;
 
 %% Let's compute graph metrics across all subjects with weights exceeding threshold 0.15
-m = size(SUBJECTS,3);
 d2 = zeros(m,1);
 L2 = zeros(m,1);
 C2 = zeros(m,1);
 
 for i = 1:m
-    A2 = double(SUBJECTS(:,:,i)>0.15);
+    A2 = double(newconn(:,:,i)>0.15);
     A2(A2 < 0) = 0;
     d2(i) = density_und(A2);
     D2 = distance_bin(A2);
@@ -113,9 +102,13 @@ end
 
 L2(isnan(L2)) = 0;
 
-%% Let's also create matrices with density of 0.3
+%% Let's create matrices with density of 0.3
+d3 = zeros(m,1);
+L3 = zeros(m,1);
+C3 = zeros(m,1);
+
 for i = 1:m
-    thr_m = threshold_proportional(SUBJECTS(:,:,i),0.3);
+    thr_m = threshold_proportional(newconn(:,:,i),0.3);
     d3(i) = density_und(thr_m);
     D3 = distance_bin(thr_m);
     L3(i) = mean(squareform(D3));
@@ -123,12 +116,12 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with postive weights only
-Lrandom = zeros(m,10);
-Crandom = zeros(m,10);
+Lrandom = zeros(m,100);
+Crandom = zeros(m,100);
 
 for i = 1:m
-    A = couble(SUBJECTS(:,:,i)>0);
-    for j = 1:10
+    A = double(newconn(:,:,i)>0);
+    for j = 1:100
         B = randmio_und(A,10);
         Drandom = distance_bin(B);
         Lrandom(i,j) = mean(squareform(Drandom));
@@ -137,12 +130,12 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with weights exceeding 0.15
-Lrandom2 = zeros(m,10);
-Crandom2 = zeros(m,10);
+Lrandom2 = zeros(m,100);
+Crandom2 = zeros(m,100);
 
 for i = 1:m
-    A2 = double(SUBJECTS(:,:,i)>0.15);
-    for j = 1:10
+    A2 = double(newconn(:,:,i)>0.15);
+    for j = 1:100
         B2 = randmio_und(A2,10);
         Drandom2 = distance_bin(B2);
         Lrandom2(i,j) = mean(squareform(Drandom2));
@@ -151,12 +144,12 @@ for i = 1:m
 end
 
 %% Let's compute randomized networks for all subjects with density 0.3
-Lrandom3 = zeros(m,10);
-Crandom3 = zeros(m,10);
+Lrandom3 = zeros(m,100);
+Crandom3 = zeros(m,100);
 
 for i = 1:m
-    thr_m2 = threshold_proportional(SUBJECTS(:,:,i),0.3);
-    for j = 1:10
+    thr_m2 = threshold_proportional(newconn(:,:,i),0.3);
+    for j = 1:100
         B3 = randmio_und(thr_m2,10);
         Drandom3 = distance_bin(B3);
         Lrandom3(i,j) = mean(squareform(Drandom3));
@@ -207,16 +200,13 @@ end
 for i = 1:m
     SW(i) = Cnormalized(i)/Lnormalized(i);
 end
-%min = 1.0764
 
 %When weights exceeding 0.15 are present
 for i = 1:m
     SW2(i) = Cnormalized2(i)/Lnormalized2(i);
 end
-%min = 1.2804
 
 %When density is 0.3
 for i = 1:m
     SW3(i) = Cnormalized3(i)/Lnormalized3(i);
 end
-%min = 1.5064
