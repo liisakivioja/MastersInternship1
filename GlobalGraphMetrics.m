@@ -1,7 +1,7 @@
 ==================================================
 %% Compute the global graph metrics clustering coefficient and shortest 
 %% path length across all subjects for their binarized network, using 
-%% different proportional thresholds. Generate 100 randomized networks 
+%% different proportional thresholds. Generate 50 randomized networks 
 %% across all subjects. Compute normalized graph metrics across all 
 %% subjects. Finish by computing the small-world index across all subjects.
 ==================================================
