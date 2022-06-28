@@ -17,7 +17,6 @@ VOLS = regionProperties(:,4,subjects==1); %disregard their volumes
 %% Let's compute the total volume for each subject
 m = size(newconn, 3);
 vol = zeros(m,1);
-
 for i = 1:m
     temp = sum(VOLS(:,:,i));
     vol(i,:) = temp;
@@ -25,49 +24,40 @@ end
 
 %% Clean the dataset from outliers
 %Average functional connectivity per subject
+FC = zeros(m,1);
 for i = 1:size(newconn,3)
-    sl = (squareform(newconn(:,:,i)));
-    avg = mean(sl,'all'); 
-    fconn(i,:) = avg;
+    temp = newconn(:,:,i);
+    index = find(temp>0);
+    FC(i,:) = mean(temp(index));
 end
 
-s = [1:size(newconn,3)].'; %create subjects list
-fconn = [fconn s];
-
-Q1 = quantile(fconn,[0.25]); 
-Q2 = quantile(fconn,[0.5]); 
-Q3 = quantile(fconn,[0.75]);
-IQR = iqr(fconn); 
-acf = fconn(fconn(:,1)<(Q1-1.5*IQR)|fconn(:,1)>(Q3+1.5*IQR),:);
+Q1 = quantile(FC,[0.25]); 
+Q2 = quantile(FC,[0.5]); 
+Q3 = quantile(FC,[0.75]);
+IQR = iqr(FC); 
+outl1 = fconn(FC(:,1)<(Q1-1.5*IQR)|FC(:,1)>(Q3+1.5*IQR),:);
 clear Q1 Q2 Q3 IQR
   
 %% Find subjects with strongly deviating connectivity patterns
 T = zeros(m);
 J = newconn(:,:,:);
-J = permute(reshape(J, 114, 114, 470), [3 1 2]); %114 is the amount of nodes
+J = permute(reshape(J, 114, 114, 470), [3 1 2]); %114 is the amount of nodes, 470 is the amount of subjects
 T = corr(J(:,:)'); 
-
-%Let's visualize T
-figure; imagesc(T); colorbar
 
 %% Get a single score per subject
 score = mean(T,2);
-subs = [1:size(score)].';
-scatter(subs,score);
-
-subscore = []; 
-subscore = [subs score];
 
 Q1 = quantile(score,[0.25]); 
 Q2 = quantile(score,[0.5]); 
 Q3 = quantile(score,[0.75]); 
 IQR = iqr(score);
-outl = subscore(subscore(:,2)<(Q1-1.5*IQR)|subscore(:,2)>(Q3+1.5*IQR),:); 
+outl2 = score(score<(Q1-1.5*IQR)|score>(Q3+1.5*IQR),:); 
 
 %Let's disregard the subjects identified as potential outliers in both methods.
-newconn(:,:,118) = [];
-newconn(:,:,434) = [];
-vol(118) = [];
-vol(434) = [];
-subs = [1:size(newconn,3)].'; %update the amount of included subjects
-         
+%For example subject 118 was identified as an outlier
+newconn(:,:,1) = [];
+vol(1) = [];
+VOLS(:,:,1) = [];
+FC(1) = [];
+
+subs = [1:size(newconn,3)].'; %update the amount of included subjects        
